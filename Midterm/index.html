@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Private Sky</title>
+
+		<script src="//192.168.1.9:8000/socket.io/socket.io.js" type="text/javascript"></script>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+
+		<script src="d3.v3.min.js" charset="utf-8"></script>
+		<script src="/c3-0.4.10/c3.min.js"></script>
+
+
+		<link href="/c3-0.4.10/c3.css" rel="stylesheet" type="text/css">
+		<style>
+			@media (max-width: 1000px){
+				body{
+					margin:0;
+					padding:0;
+					background-color: #31d1ff;
+				}
+
+				#today{
+					padding-top: 10%;
+					padding-left: 36%;
+					font-family: Arial;
+					font-size: 4.0em;
+					color: white;
+				}
+
+				#temp{
+					padding-top: 2%;
+					padding-left:32%;
+					font-family: Arial;
+					font-size: 16.0em;
+					display:inline-block;
+					color: white;
+				}
+
+				#tempsig{
+					padding-top: 2%;
+					text-align:center;
+					font-family: Arial;
+					font-size: 6.0em;
+					display:inline-block;
+					color: white;
+				}
+
+				#rain{
+					display:inline-block;
+					padding-left:22%;
+					width:20%;
+				}
+				#info{
+					display:inline-block;
+					padding-left: 4%;
+					font-family: Arial;
+					font-size: 2.0em;
+					color: white;
+				}
+
+				#chart{
+					padding-top: 15%;
+					padding-left:5%;
+					width:850px;
+					height:400px;
+					color: white;
+				}
+
+
+			}
+
+
+		</style>
+		
+
+	</head>
+
+	<body>
+		<div id="today"><p></p></div>
+		<div id="temp"><p> </p></div>
+		<p id="tempsig">°F</p>
+		<div></div>
+		<img id="rain"></img>
+		<div id="info">
+			<div id="humidity"><p> </p></div>
+			<div id="head-index"><p> </p></div>
+			<div id="uv-index"><p> </p></div>
+
+			<div id="high-temp"><p></p></div>
+			<img id="rain"></img>
+		</div>
+
+
+		<div id="chart"></div>
+
+		<script>
+			var hum;
+			var temp;
+			var hein;
+			var uvin;
+
+			var yesTemp;
+
+			var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+			var d = new Date();
+			var dayOfWeek = days[d.getDay()];
+			document.getElementById("today").innerHTML = dayOfWeek;
+
+
+			var socket;
+			var url='192.168.1.9';
+			var port=8000
+			//var url='http//47.18.216.182';
+			//$(document).ready(function(){
+				socket = io.connect(url+':'+port);
+				socket.on('toScreen', function (data) {
+					//console.log(data);
+					
+					//separate data into substrings
+					hum = data.substring(0,2);
+					temp = data.substring(3, 5);
+					hein = data.substring(6, 8);
+					uvin = data.substring(9,12);
+
+
+
+					//print data to screen
+					document.getElementById("temp").innerHTML = temp;
+					document.getElementById("humidity").innerHTML = "Humidity: " + hum +"%";
+					document.getElementById("head-index").innerHTML = "Heat Index: " + hein +"°F";
+					document.getElementById("uv-index").innerHTML = "UV-Index: " + uvin +"%";
+
+
+					//weather underground api
+					jQuery(document).ready(function($) {
+					  $.ajax({
+					  url : "http://api.wunderground.com/api/a75bcb7a805b0a97/forecast/q/NY/New_York.json",
+					  dataType : "jsonp",
+					  success : function(parsed_json) {
+
+
+					  	//today's data
+					  	var temp_f = parsed_json.forecast.simpleforecast.forecastday[0].high.fahrenheit;
+					  	var condition = parsed_json.forecast.simpleforecast.forecastday[0].icon;
+
+
+
+					  	//3 day forcast
+					  	var title2 = parsed_json.forecast.txt_forecast.forecastday[2].title;
+					  	var temp_f2 = parsed_json.forecast.simpleforecast.forecastday[1].high.fahrenheit;
+					  	var hum2 = parsed_json.forecast.simpleforecast.forecastday[1].avehumidity;
+					  	var condition2 = parsed_json.forecast.txt_forecast.forecastday[2].icon;
+
+					  	var title3 = parsed_json.forecast.txt_forecast.forecastday[4].title;
+					  	var temp_f3 = parsed_json.forecast.simpleforecast.forecastday[2].high.fahrenheit;
+					  	var hum3 = parsed_json.forecast.simpleforecast.forecastday[2].avehumidity;
+					  	var condition3 = parsed_json.forecast.txt_forecast.forecastday[4].icon;
+
+
+
+
+					  	//today's data
+					  	document.getElementById("high-temp").innerHTML = "High for the day: "+temp_f+"°F";
+
+					  	console.log(condition);
+
+					  	if (condition == "cloudy"){
+					  		document.getElementById("rain").src = 'img/cloudybl.png';
+					  	} else if (condition == "clear"){
+					  		document.getElementById("rain").src = 'img/sunbl.png'
+					  	} else if (condition == "rain"){
+					  		document.getElementById("rain").src = 'img/rainbl.png'
+					  	} else if (condition == "partlycloudy"){
+					  		document.getElementById("rain").src = 'img/partsunbl.png'
+					  	} else if (condition == "chancerain"){
+					  		document.getElementById("rain").src = 'img/rainbl.png'
+					  	}
+
+
+					  	//day of the week for x-axis
+					  	var d = new Date();
+					  	var Day = d.getDay();
+					  	var weekday = new Array(7);
+						weekday[0]=  "Sunday";
+						weekday[1] = "Monday";
+						weekday[2] = "Tuesday";
+						weekday[3] = "Wednesday";
+						weekday[4] = "Thursday";
+						weekday[5] = "Friday";
+						weekday[6] = "Saturday";
+
+						var twoP;
+						var twoF;
+
+						if(Day - 2 < 0){
+							twoP = weekday[7 - Math.abs(Day-2)];
+						} else {
+							twoP = weekday[Day-2];
+						}
+
+						if(Day + 2 > 6){
+							twoF = (Day+2) - 7;
+						} else {
+							twoF = weekday[Day+2];
+						}
+
+
+						//get past info for chart
+						socket.on('toChart', function(data){
+
+
+							var yesTemp = data[0];
+							var yesHum = data[1];
+							var yes2Temp = data[2];
+							var yes2Hum = data[3];
+
+
+
+						  	//chart
+						  	var chart = c3.generate({
+							    data: {
+							    	x:'x',
+							        columns: [
+							        	['x', twoP, 'Yesterday', 'Today', 'Tomorrow', twoF],
+							            ['Temperature', yes2Temp, yesTemp, temp, temp_f2, temp_f3],
+							            ['Humidity', yes2Hum, yesHum, hum, hum2, hum3]
+							        ],
+							    
+								axes: {
+							        data2: 'y2' // ADD
+							      }
+							    },
+							    color: {
+							        pattern: ['#f5ee26', '#fb5522']
+							    },
+							    axis: {
+							    	x: {
+							            type: 'category' // this needed to load string x value
+							        },
+							      y: {
+							        label: { // ADD
+							          text: '°F',
+							          position: 'outer-middle'
+							        }
+							      },
+							      y2: {
+							        show: true,
+							        label: { // ADD
+							          text: '%',
+							          position: 'outer-middle'
+							        }
+							      }
+							    }
+							});
+
+
+						  	});
+
+					  }
+
+					  });
+						
+					});
+
+
+
+
+				});
+
+
+
+			
+
+
+
+		</script>
+
+	</body>
+</html>
